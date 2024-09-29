@@ -1,5 +1,9 @@
+import streamlit as st
 from bs4 import BeautifulSoup
 from datetime import datetime
+
+# Title for the Streamlit app
+st.title("Ground Availability and Matches Schedule")
 
 # Load the HTML file with all grounds
 with open('all-grounds.html', 'r', encoding='utf-8') as file:
@@ -88,7 +92,7 @@ for match in matches:
         'match_date': match_date
     })
 
-# # Identify available grounds by removing the ones in use
+# Identify available grounds by removing the ones in use
 available_grounds = [ground for ground in all_grounds if ground not in grounds_in_use_today]
 
 # Group matches by ground
@@ -99,14 +103,20 @@ for match in matches_today:
     matches_by_ground[match['ground_name']].append(match)
 
 # Display matches by ground
-for ground, matches in matches_by_ground.items():
-    print(f"Matches scheduled for today on Ground: {ground}\n")
-    for match in matches:
-        print(f"Home Team: {match['home_team_name']}, Visiting Team: {match['visiting_team_name']}")
-        print(f"Ground: {match['ground_name']}, Date: {match['match_date']}, Time: {match['match_time']}\n")
-
+st.subheader("Matches scheduled for today by Ground:")
+if matches_by_ground:
+    for ground, matches in matches_by_ground.items():
+        st.write(f"**Ground: {ground}**")
+        for match in matches:
+            st.write(f"Home Team: {match['home_team_name']}, Visiting Team: {match['visiting_team_name']}")
+            st.write(f"Match Time: {match['match_time']}, Date: {match['match_date']}\n")
+else:
+    st.write("No matches scheduled for today.")
 
 # Display available grounds today
-print("\n No Games Scheduled for Today. Available grounds today:")
-for ground in available_grounds:
-    print(f"Ground: {ground}")
+st.subheader("Available Grounds Today:")
+if available_grounds:
+    for ground in available_grounds:
+        st.write(f"Ground: {ground}")
+else:
+    st.write("No available grounds for today.")
