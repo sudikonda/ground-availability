@@ -67,7 +67,9 @@ def process_match_data(soup, selected_date):
 
 
 def main():
-    st.title("Ground Availability and Matches Schedule")
+    # Show the page title and description.
+    st.set_page_config(page_title="Ground Availability and Matches Schedule - Streamlit App", page_icon="🏏")
+    st.title("🏃🏼‍♂️‍➡ Ground Availability and Matches Schedule 🏏️")
 
     selected_date = st.date_input("Select a date", datetime.today())
     date_str = selected_date.strftime('%b %d')
