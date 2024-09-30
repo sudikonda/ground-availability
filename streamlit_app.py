@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -92,16 +93,25 @@ def main():
     if matches_by_ground:
         for ground, matches in matches_by_ground.items():
             with st.expander(f"Ground: {ground}"):
+                match_data = []
                 for match in matches:
-                    st.write(f"Home Team: {match['home_team_name']}, Visiting Team: {match['visiting_team_name']}")
-                    st.write(f"Match Time: {match['match_time']}, Date: {match['match_date']}")
+                    match_data.append({
+                        "Home Team": match['home_team_name'],
+                        "Visiting Team": match['visiting_team_name'],
+                        "Match Time": match['match_time'],
+                        "Date": match['match_date']
+                    })
+                df = pd.DataFrame(match_data)
+                st.table(df)
     else:
-        st.write("No matches scheduled for the selected date.")
+        st.write(f"No matches scheduled for {date_str}.")
 
-    st.subheader("Available Grounds:")
+    # Display available grounds today
+    st.subheader(f"Available Grounds for {date_str}:")
     if available_grounds:
-        for ground in available_grounds:
-            st.write(f"Ground: {ground}")
+        with st.expander("Click to view available grounds"):
+            df_available = pd.DataFrame({"Available Grounds": available_grounds})
+            st.table(df_available)
     else:
         st.write("No available grounds for the selected date.")
 
