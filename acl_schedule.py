@@ -13,13 +13,8 @@ def load_cached_data():
     try:
         if os.path.exists(CACHE_FILE):
             cache_creation_time = os.path.getctime(CACHE_FILE)
-            st.write(f"Cache creation time: {cache_creation_time}")
             cache_age = datetime.now() - datetime.fromtimestamp(cache_creation_time)
-            st.write(f"Cache age: {cache_age}")
-            st.write(f"timedelta {timedelta(hours=CACHE_EXPIRY_HOURS)}")
-
             if cache_age < timedelta(hours=CACHE_EXPIRY_HOURS):
-                st.write(f"Loading cached data from {CACHE_FILE}")
                 with open(CACHE_FILE, 'r') as f:
                     cache = json.load(f)
                 return cache.get('data', None)
@@ -27,6 +22,7 @@ def load_cached_data():
         st.write(f"Error loading cached data: {e}")
 
     return None
+
 def save_cached_data(data):
     cache = {
         'timestamp': datetime.now().isoformat(),
@@ -36,7 +32,7 @@ def save_cached_data(data):
         json.dump(cache, f)
 
 
-# @st.cache_data(ttl=3600 * 24)
+@st.cache_data(ttl=3600 * 24)
 def fetch_and_parse_data(url):
     cached_data = load_cached_data()
     if cached_data:
