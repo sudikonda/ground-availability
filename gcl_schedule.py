@@ -1,0 +1,78 @@
+import requests
+from bs4 import BeautifulSoup
+import json
+from datetime import date
+
+def get_match_info(match_div):
+    if not match_div:
+        return None
+
+    # Extract date and time
+    date_div = match_div.find('div', class_='sch-time')
+    day = date_div.find('h4').text
+    date = date_div.find('h2').text
+    month_year = date_div.find('h5').text
+    time = date_div.find_all('h5')[-1].text
+    match_date = f"{day}, {month_year} {date}"
+
+    # Extract team names and IDs
+    schedule_text = match_div.find('div', class_='schedule-text')
+    team_links = schedule_text.find_all('a', href=lambda x: x and 'viewTeam.do' in x)
+    home_team_name = team_links[0].text.strip()
+    visiting_team_name = team_links[1].text.strip()
+    home_team_id = team_links[0]['href'].split('teamId=')[1].split('&')[0]
+    visiting_team_id = team_links[1]['href'].split('teamId=')[1].split('&')[0]
+
+    # Extract ground name
+    ground_link = match_div.find('a', href=lambda x: x and 'viewGround.do' in x)
+    ground_name = ground_link.text.strip() if ground_link else None
+
+    # Extract umpire info
+    umpire_link = match_div.find('a', href=lambda x: x and 'viewUmpire.do' in x)
+    umpire_id = umpire_link['href'].split('umpireUId=')[1].split('&')[0] if umpire_link else "N/A"
+
+    # Find the scorecard link and extract the match number
+    scorecard_link = match_div.find('a', href=lambda x: x and 'viewScorecard.do' in x)
+    roster_link = schedule_text.find_all('a', href=lambda x: x and 'teamRoster.do' in x)
+    match_number = scorecard_link['href'].split('matchId=')[1].split('&')[0] if scorecard_link else roster_link[0]['href'].split('fixtureId=')[1].split('&')[0]
+
+    # Create JSON object
+    match_info = {
+        "match_no": match_number,
+        "home_team_id": home_team_id,
+        "visiting_team_id": visiting_team_id,
+        "umpire_team_id": umpire_id,
+        "home_team_name": home_team_name,
+        "visiting_team_name": visiting_team_name,
+        "ground_name": ground_name,
+        "match_time": time,
+        "match_date": match_date
+    }
+
+    return match_info
+
+
+today = date.today()
+formatted_today = today.strftime("%m/%d/%Y")
+
+# URL of the Georgia Cricket League website
+url = f"https://www.cricclubs.com/GeorgiaCricketLeague/fixtures.do?league=All&teamId=null&internalClubId=null&groundId=null&year=null&clubId=7109&fromDate={formatted_today}&toDate="
+
+# Send a GET request to the website
+response = requests.get(url)
+
+# Parse the HTML content
+soup = BeautifulSoup(response.content, "html.parser")
+
+# Find all divs with class 'schedule-all'
+match_divs = soup.find_all('div', class_='schedule-all')
+
+# Process each match
+all_matches = []
+for match_div in match_divs:
+    match_info = get_match_info(match_div)
+    if match_info:
+        all_matches.append(match_info)
+
+# Print the result
+print(json.dumps(all_matches, indent=2))
