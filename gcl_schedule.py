@@ -1,7 +1,43 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import date
+from datetime import datetime, timedelta, date
+import os
+
+CACHE_FILE = 'data/gcl_schedule_cache.json'
+CACHE_EXPIRY_HOURS = 24
+
+def load_cached_data():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r') as f:
+            cache = json.load(f)
+        if datetime.now() - datetime.fromisoformat(cache['timestamp']) < timedelta(hours=CACHE_EXPIRY_HOURS):
+            return cache['data']
+    return None
+
+def save_cached_data(data):
+    cache = {
+        'timestamp': datetime.now().isoformat(),
+        'data': data
+    }
+    with open(CACHE_FILE, 'w') as f:
+        json.dump(cache, f)
+
+def fetch_and_parse_data(url):
+    cached_data = load_cached_data()
+    if cached_data:
+        return cached_data
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+        parsed_data = parse_schedule_data(soup)
+        save_cached_data(parsed_data)
+        return parsed_data
+    except requests.RequestException as e:
+        print(f"Error fetching data: {str(e)}")
+        return None
 
 def get_match_info(match_div):
     if not match_div:
@@ -38,6 +74,7 @@ def get_match_info(match_div):
 
     # Create JSON object
     match_info = {
+        "league": "GCL",
         "match_no": match_number,
         "home_team_id": home_team_id,
         "visiting_team_id": visiting_team_id,
@@ -52,27 +89,25 @@ def get_match_info(match_div):
     return match_info
 
 
-today = date.today()
-formatted_today = today.strftime("%m/%d/%Y")
 
-# URL of the Georgia Cricket League website
-url = f"https://www.cricclubs.com/GeorgiaCricketLeague/fixtures.do?league=All&teamId=null&internalClubId=null&groundId=null&year=null&clubId=7109&fromDate={formatted_today}&toDate="
+def parse_schedule_data(soup):
+    # Find all divs with class 'schedule-all'
+    match_divs = soup.find_all('div', class_='schedule-all')
+    # Process each match
+    all_matches = []
+    for match_div in match_divs:
+        match_info = get_match_info(match_div)
+        if match_info:
+            all_matches.append(match_info)
 
-# Send a GET request to the website
-response = requests.get(url)
+    return {"matches": all_matches}
 
-# Parse the HTML content
-soup = BeautifulSoup(response.content, "html.parser")
+def get_gcl_schedule_main():
+    today = date.today()
+    formatted_today = today.strftime("%m/%d/%Y")
 
-# Find all divs with class 'schedule-all'
-match_divs = soup.find_all('div', class_='schedule-all')
+    url = f"https://www.cricclubs.com/GeorgiaCricketLeague/fixtures.do?league=All&teamId=null&internalClubId=null&groundId=null&year=null&clubId=7109&fromDate={formatted_today}&toDate="
+    data = fetch_and_parse_data(url)
 
-# Process each match
-all_matches = []
-for match_div in match_divs:
-    match_info = get_match_info(match_div)
-    if match_info:
-        all_matches.append(match_info)
-
-# Print the result
-print(json.dumps(all_matches, indent=2))
+    if data:
+       return data
