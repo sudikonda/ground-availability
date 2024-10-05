@@ -6,15 +6,26 @@ from datetime import datetime, timedelta, date
 import os
 
 CACHE_FILE = 'data/gcl_schedule_cache.json'
-CACHE_EXPIRY_HOURS = 24
+CACHE_EXPIRY_HOURS = 2
 
 
 def load_cached_data():
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, 'r') as f:
-            cache = json.load(f)
-        if datetime.now() - datetime.fromisoformat(cache['timestamp']) < timedelta(hours=CACHE_EXPIRY_HOURS):
-            return cache['data']
+    try:
+        if os.path.exists(CACHE_FILE):
+            cache_creation_time = os.path.getctime(CACHE_FILE)
+            st.write(f"Cache creation time: {cache_creation_time}")
+            cache_age = datetime.now() - datetime.fromtimestamp(cache_creation_time)
+            st.write(f"Cache age: {cache_age}")
+            st.write(f"timedelta {timedelta(hours=CACHE_EXPIRY_HOURS)}")
+
+            if cache_age < timedelta(hours=CACHE_EXPIRY_HOURS):
+                st.write(f"Loading cached data from {CACHE_FILE}")
+                with open(CACHE_FILE, 'r') as f:
+                    cache = json.load(f)
+                return cache.get('data', None)
+    except (IOError, json.JSONDecodeError) as e:
+        st.write(f"Error loading cached data: {e}")
+
     return None
 
 
@@ -27,11 +38,11 @@ def save_cached_data(data):
         json.dump(cache, f)
 
 
-@st.cache_data(ttl=3600 * 24)
+# @st.cache_data(ttl=3600 * 24)
 def fetch_and_parse_data(url):
-    cached_data = load_cached_data()
-    if cached_data:
-        return cached_data
+    # cached_data = load_cached_data()
+    # if cached_data:
+    #     return cached_data
 
     try:
         response = requests.get(url)
@@ -77,7 +88,7 @@ def get_match_info(match_div):
     scorecard_link = match_div.find('a', href=lambda x: x and 'viewScorecard.do' in x)
     roster_link = schedule_text.find_all('a', href=lambda x: x and 'teamRoster.do' in x)
     match_number = scorecard_link['href'].split('matchId=')[1].split('&')[0] if scorecard_link else \
-    roster_link[0]['href'].split('fixtureId=')[1].split('&')[0]
+        roster_link[0]['href'].split('fixtureId=')[1].split('&')[0]
 
     # Create JSON object
     match_info = {
