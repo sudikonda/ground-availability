@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import os
 
 CACHE_FILE = 'data/gcl_schedule_cache.json'
-CACHE_EXPIRY_HOURS = 2
+CACHE_EXPIRY_HOURS = 24
 
 
 def load_cached_data():
@@ -38,11 +38,11 @@ def save_cached_data(data):
         json.dump(cache, f)
 
 
-# @st.cache_data(ttl=3600 * 24)
+@st.cache_data(ttl=3600 * 24)
 def fetch_and_parse_data(url):
-    # cached_data = load_cached_data()
-    # if cached_data:
-    #     return cached_data
+    cached_data = load_cached_data()
+    if cached_data:
+        return cached_data
 
     try:
         response = requests.get(url)
