@@ -37,7 +37,8 @@ def main():
     st.subheader(f"Matches scheduled for {acl_date_str} by Ground:")
     if matches_today:
         for ground in grounds_in_use_today:
-            with st.expander(ground):
+            ground_label = ground if ground else "NA"
+            with st.expander(ground_label):
                 ground_matches = [match for match in matches_today if match['ground_name'] == ground]
                 df = pd.DataFrame(ground_matches)
                 st.table(df[['league','home_team_name', 'visiting_team_name', 'match_time', 'match_date']])
