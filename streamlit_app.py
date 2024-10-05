@@ -22,7 +22,12 @@ def main():
         st.error("Error fetching data. Please try again later.")
         return
 
-    all_grounds = acl_schedule_data['all_grounds']
+    all_grounds = acl_schedule_data['all_grounds'] + gcl_schedule_data['all_grounds']
+    # cleanup the data
+    all_grounds = list(set(all_grounds))
+    all_grounds = [ground for ground in all_grounds if ground]
+    all_grounds.sort()
+
     matches = acl_schedule_data['matches'] + gcl_schedule_data['matches']
 
     matches_today = [match for match in matches if acl_date_str in match['match_date'] or gcl_date_str in match['match_date']]

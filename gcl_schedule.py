@@ -1,3 +1,4 @@
+import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -7,6 +8,7 @@ import os
 CACHE_FILE = 'data/gcl_schedule_cache.json'
 CACHE_EXPIRY_HOURS = 24
 
+
 def load_cached_data():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, 'r') as f:
@@ -14,6 +16,7 @@ def load_cached_data():
         if datetime.now() - datetime.fromisoformat(cache['timestamp']) < timedelta(hours=CACHE_EXPIRY_HOURS):
             return cache['data']
     return None
+
 
 def save_cached_data(data):
     cache = {
@@ -23,6 +26,8 @@ def save_cached_data(data):
     with open(CACHE_FILE, 'w') as f:
         json.dump(cache, f)
 
+
+@st.cache_data(ttl=3600 * 24)
 def fetch_and_parse_data(url):
     cached_data = load_cached_data()
     if cached_data:
@@ -36,8 +41,9 @@ def fetch_and_parse_data(url):
         save_cached_data(parsed_data)
         return parsed_data
     except requests.RequestException as e:
-        print(f"Error fetching data: {str(e)}")
+        st.write(f"Error fetching data: {str(e)}")
         return None
+
 
 def get_match_info(match_div):
     if not match_div:
@@ -70,7 +76,8 @@ def get_match_info(match_div):
     # Find the scorecard link and extract the match number
     scorecard_link = match_div.find('a', href=lambda x: x and 'viewScorecard.do' in x)
     roster_link = schedule_text.find_all('a', href=lambda x: x and 'teamRoster.do' in x)
-    match_number = scorecard_link['href'].split('matchId=')[1].split('&')[0] if scorecard_link else roster_link[0]['href'].split('fixtureId=')[1].split('&')[0]
+    match_number = scorecard_link['href'].split('matchId=')[1].split('&')[0] if scorecard_link else \
+    roster_link[0]['href'].split('fixtureId=')[1].split('&')[0]
 
     # Create JSON object
     match_info = {
@@ -89,6 +96,17 @@ def get_match_info(match_div):
     return match_info
 
 
+def get_all_grounds(soup):
+    grounds = set()
+    grounds_div = soup.find('div', attrs={'title': 'Change Ground'})
+    ground_links = grounds_div.find_all('li')
+    for ground_link in ground_links:
+        if ground_link:
+            ground_name = ground_link.text.strip()
+            grounds.add(ground_name)
+
+    return list(grounds)
+
 
 def parse_schedule_data(soup):
     # Find all divs with class 'schedule-all'
@@ -100,7 +118,9 @@ def parse_schedule_data(soup):
         if match_info:
             all_matches.append(match_info)
 
-    return {"matches": all_matches}
+    all_grounds = get_all_grounds(soup)
+    return {"all_grounds": all_grounds, "matches": all_matches}
+
 
 def get_gcl_schedule_main():
     today = date.today()
@@ -110,4 +130,4 @@ def get_gcl_schedule_main():
     data = fetch_and_parse_data(url)
 
     if data:
-       return data
+        return data
