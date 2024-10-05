@@ -32,7 +32,7 @@ def save_cached_data(data):
         json.dump(cache, f)
 
 
-@st.cache_data(ttl=3600 * 24)
+# @st.cache_data(ttl=3600 * 24)
 def fetch_and_parse_data(url):
     cached_data = load_cached_data()
     if cached_data:
