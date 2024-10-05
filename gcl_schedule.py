@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta, date
 import os
 
-CACHE_FILE = 'data/gcl_schedule_cache.json'
+CACHE_FILE = 'data/gcl_schedule_cache_1.json'
 CACHE_EXPIRY_HOURS = 24
 
 
