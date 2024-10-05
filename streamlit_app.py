@@ -22,6 +22,9 @@ def main():
         st.error("Error fetching data. Please try again later.")
         return
 
+    st.write(f"gcl_schedule_data = {gcl_schedule_data}")
+    st.write(f"acl_schedule_data = {acl_schedule_data}")
+
     all_grounds = acl_schedule_data['all_grounds'] + gcl_schedule_data['all_grounds']
     # cleanup the data
     all_grounds = list(set(all_grounds))
